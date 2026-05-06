@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>EduManage Mobile</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4F46E5">
+    <link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=EU&background=4F46E5&color=fff&size=192">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="auth-screen" class="auth-screen" style="position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:rgba(15,23,42,0.95);z-index:50;">
+        <div class="auth-card" style="width:100%;max-width:360px;padding:32px;background:var(--bg-surface);border-radius:24px;box-shadow:0 20px 50px rgba(15,23,42,0.25);text-align:center;">
+            <h1 style="margin-bottom:24px;font-size:2rem;color:var(--text-main);">EduManage</h1>
+            <div class="role-picker" style="display:flex;justify-content:space-between;gap:10px;margin-bottom:20px;">
+                <button type="button" class="role-btn active" data-role-button="talaba" style="flex:1;padding:12px 10px;border:1px solid var(--border-color);border-radius:12px;background:var(--primary);color:#fff;cursor:pointer;">Talaba</button>
+                <button type="button" class="role-btn" data-role-button="oquvchi" style="flex:1;padding:12px 10px;border:1px solid var(--border-color);border-radius:12px;background:transparent;color:var(--text-main);cursor:pointer;">O'qituvchi</button>
+                <button type="button" class="role-btn" data-role-button="admin" style="flex:1;padding:12px 10px;border:1px solid var(--border-color);border-radius:12px;background:transparent;color:var(--text-main);cursor:pointer;">Admin</button>
+            </div>
+            <div class="auth-field" style="margin-bottom:16px;">
+                <input id="login-email" type="text" placeholder="Email manzilingiz" style="width:100%;padding:14px 16px;border:1px solid var(--border-color);border-radius:14px;background:var(--bg-color);color:var(--text-main);outline:none;" />
+            </div>
+            <div class="auth-field" style="margin-bottom:20px;">
+                <input id="login-password" type="password" placeholder="Parol" style="width:100%;padding:14px 16px;border:1px solid var(--border-color);border-radius:14px;background:var(--bg-color);color:var(--text-main);outline:none;" />
+            </div>
+            <button id="forgot-btn" type="button">Parolni unutdim?</button>
+            <div id="forgot-form" style="display:none">
+                <input id="reset-email" type="email" placeholder="Emailingizni kiriting">
+                <button id="send-reset-btn">Havolani yuborish</button>
+                <p id="reset-msg"></p>
+            </div>
+            <button id="login-button" style="width:100%;padding:14px 16px;border:none;border-radius:14px;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;">Kirish</button>
+            <p id="login-error" class="login-error" style="display:none;color:var(--error);margin-top:14px;font-weight:600;"></p>
+            <p style="margin-top:18px;color:var(--text-muted);font-size:0.9rem;line-height:1.5;">admin@edumanage.com / Admin@2025</p>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Top App Bar -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="user-avatar">
+                   <img src="https://ui-avatars.com/api/?name=Alisher+N&background=6366f1&color=fff" alt="User Avatar">
+                </div>
+                <div class="header-titles">
+                    <p class="greeting">Xush kelibsiz,</p>
+                    <h1 class="user-name">Alisher N.</h1>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <button class="icon-btn" aria-label="Bildirishnomalar">
+                    <i class="ph ph-bell"></i>
+                    <span class="badge">3</span>
+                </button>
+                <button id="logout-button" class="icon-btn" aria-label="Chiqish" style="display:none;padding:0 12px;gap:8px;">
+                    <i class="ph ph-sign-out"></i>
+                    <span>Chiqish</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-content" id="main-content">
+            <!-- Content will be injected by JavaScript based on active tab -->
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav" role="navigation" aria-label="Asosiy navigatsiya">
+            <button class="nav-item active" data-target="dashboard">
+                <div class="nav-icon"><i class="ph ph-squares-four"></i></div>
+                <span>Bosh sahifa</span>
+            </button>
+            <button class="nav-item" data-target="courses">
+                <div class="nav-icon"><i class="ph ph-book-open"></i></div>
+                <span>Fanlar</span>
+            </button>
+            <button class="nav-item" data-target="schedule">
+                <div class="nav-icon"><i class="ph ph-calendar-blank"></i></div>
+                <span>Dars jadvali</span>
+            </button>
+            <button class="nav-item" data-target="grades">
+                <div class="nav-icon"><i class="ph ph-check-square"></i></div>
+                <span>Baholar</span>
+            </button>
+            <button class="nav-item" data-target="profile">
+                <div class="nav-icon"><i class="ph ph-user"></i></div>
+                <span>Profil</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Templates for Pages -->
+    <template id="page-dashboard">
+        <div class="page dashboard-page fade-in">
+            <!-- Student Overview -->
+            <section class="overview-cards">
+                <div id="dashboard-profile"></div>
+                <div id="dashboard-stats" class="mt-4"></div>
+            </section>
+
+            <!-- Today's Schedule Mini -->
+            <section class="section-container mt-4">
+                <div class="section-header">
+                    <h2>Bugungi darslar</h2>
+                </div>
+                <div class="timeline mt-3" id="dashboard-today-schedule"></div>
+            </section>
+
+            <!-- Upcoming Assignments -->
+            <section class="section-container mt-4">
+               <div class="section-header">
+                    <h2>Yaqin topshiriqlar</h2>
+                </div>
+                <div id="dashboard-tasks" class="task-list mt-3"></div>
+            </section>
+        </div>
+    </template>
+
+    <template id="page-courses">
+        <div class="page fade-in">
+            <h2 class="page-title">Mening fanlarim</h2>
+            
+            <div class="search-bar mt-3">
+                <i class="ph ph-magnifying-glass"></i>
+                <input type="text" id="course-search-input" placeholder="Fanni qidirish...">
+            </div>
+
+            <div class="courses-grid mt-4" id="courses-grid"></div>
+        </div>
+    </template>
+
+    <template id="page-schedule">
+        <div class="page fade-in">
+            <h2 class="page-title">Dars jadvali</h2>
+            
+            <div class="days-slider mt-3" id="schedule-day-tabs"></div>
+
+            <div class="schedule-list mt-4" id="schedule-content"></div>
+        </div>
+    </template>
+
+    <template id="page-grades">
+        <div class="page fade-in">
+            <h2 class="page-title">Baholar</h2>
+            <div id="grades-content" class="mt-4"></div>
+        </div>
+    </template>
+
+    <template id="page-profile">
+        <div class="page profile-page fade-in">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <img src="https://ui-avatars.com/api/?name=Alisher+N&background=6366f1&color=fff&size=120" alt="Avatar">
+                    <button class="edit-avatar" aria-label="Avatarni tahrirlash"><i class="ph ph-pencil-simple"></i></button>
+                </div>
+                <h2 class="profile-name mt-3">Alisher Nurmatov</h2>
+                <p class="profile-role">Talaba ID: 210045</p>
+                <div class="profile-badges mt-2">
+                    <span class="badge-item"><i class="ph ph-medal"></i> A'lochi</span>
+                    <span class="badge-item"><i class="ph ph-star"></i> 4-kurs</span>
+                </div>
+            </div>
+
+            <div class="settings-list mt-4">
+                <h3 class="settings-title">Hisob</h3>
+                <div class="setting-item">
+                    <div class="setting-icon"><i class="ph ph-user-circle"></i></div>
+                    <div class="setting-content">Shaxsiy ma'lumotlar</div>
+                    <i class="ph ph-caret-right"></i>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-icon"><i class="ph ph-lock-key"></i></div>
+                    <div class="setting-content">Parol va xavfsizlik</div>
+                    <i class="ph ph-caret-right"></i>
+                </div>
+                
+                <h3 class="settings-title mt-3">Ilova</h3>
+                <div class="setting-item">
+                    <div class="setting-icon"><i class="ph ph-bell-ringing"></i></div>
+                    <div class="setting-content">Bildirishnomalar</div>
+                    <div class="toggle active"></div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-icon"><i class="ph ph-moon"></i></div>
+                    <div class="setting-content">Tungi rejim</div>
+                    <div class="toggle" id="theme-toggle"></div>
+                </div>
+                
+                <div class="setting-item text-red mt-4">
+                    <div class="setting-icon"><i class="ph ph-sign-out"></i></div>
+                    <div class="setting-content">Tizimdan chiqish</div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="auth.js"></script>
+    <script src="db.js"></script>
+    <script src="seed.js"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const appContainer = document.querySelector('.app-container');
+            if (appContainer) {
+                appContainer.style.display = 'none';
+            }
+
+            if (typeof window.showLoginScreen === 'function') {
+                showLoginScreen();
+            }
+
+            if (window.Auth && typeof window.Auth.onAuthReady === 'function') {
+                window.Auth.onAuthReady((user) => {
+                    const app = document.querySelector('.app-container');
+                    if (user) {
+                        if (app) app.style.display = 'block';
+                        if (typeof window.hideLoginScreen === 'function') {
+                            hideLoginScreen();
+                        }
+                        if (typeof window.initApp === 'function') {
+                            window.initApp();
+                        }
+                    } else {
+                        if (app) app.style.display = 'none';
+                        if (typeof window.showLoginScreen === 'function') {
+                            showLoginScreen();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
