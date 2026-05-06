@@ -174,7 +174,7 @@
                 if (result.success) results.success.push(result);
                 else results.failed.push(result);
 
-                await new Promise(r => setTimeout(r, 800)); // avoid rate limiting
+                await new Promise(r => setTimeout(r, 1500)); // avoid rate limiting
             }
 
             // Restore admin session after bulk create
