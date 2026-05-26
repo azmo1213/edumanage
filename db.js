@@ -240,6 +240,217 @@
             const updated = { ...session, ...data };
             sessionStorage.setItem('edu-session', JSON.stringify(updated));
             return updated;
+        },
+
+        generateExcelReport: async function(groupId) {
+            try {
+                // Fetch students for the group
+                const students = await MockDB.getStudentsByGroup(groupId);
+                
+                // Build data array with report columns
+                const data = [];
+                for (const student of students) {
+                    // Fetch grades for this student
+                    const uid = getSessionUid();
+                    if (!uid) continue;
+                    
+                    const gradesSnapshot = await getFirestore()
+                        .collection('grades')
+                        .where('studentId', '==', student.id)
+                        .get();
+                    
+                    const grades = gradesSnapshot.docs.map(doc => doc.data());
+                    
+                    // Calculate GPA
+                    let gpa = 0;
+                    if (grades.length > 0) {
+                        const sum = grades.reduce((acc, g) => acc + (g.score || 0), 0);
+                        gpa = sum / grades.length;
+                    }
+                    
+                    // Get attendance percentage
+                    const attendanceSnapshot = await getFirestore()
+                        .collection('attendance')
+                        .where('studentId', '==', student.id)
+                        .get();
+                    
+                    const attendanceDocs = attendanceSnapshot.docs.map(doc => doc.data());
+                    let attendancePercent = 0;
+                    if (attendanceDocs.length > 0) {
+                        const presentCount = attendanceDocs.filter(a => a.status === 'present').length;
+                        attendancePercent = Math.round((presentCount / attendanceDocs.length) * 100);
+                    }
+                    
+                    // Get contract status
+                    const contractSnapshot = await getFirestore()
+                        .collection('contracts')
+                        .where('studentId', '==', student.id)
+                        .limit(1)
+                        .get();
+                    
+                    const contractStatus = contractSnapshot.empty ? 'Yo\'q' : 'Bor';
+                    
+                    data.push({
+                        fullName: student.fullName || student.name || 'Noma\'lum',
+                        GPA: gpa.toFixed(2),
+                        attendancePercent: attendancePercent + '%',
+                        contractStatus: contractStatus
+                    });
+                }
+                
+                // Create workbook using SheetJS
+                if (!window.XLSX) {
+                    console.error('SheetJS (XLSX) is not loaded');
+                    return;
+                }
+                
+                const ws = window.XLSX.utils.json_to_sheet(data);
+                const wb = window.XLSX.utils.book_new();
+                window.XLSX.utils.book_append_sheet(wb, ws, 'Hisobot');
+                
+                // Trigger download
+                window.XLSX.writeFile(wb, 'edumanage-hisobot.xlsx');
+                console.log('Excel report downloaded successfully');
+            } catch (error) {
+                console.error('Error generating Excel report:', error);
+            }
+        },
+
+        generatePDFReport: async function(groupId) {
+            try {
+                // Fetch students for the group
+                const students = await MockDB.getStudentsByGroup(groupId);
+                
+                // Build data array with report columns
+                const data = [];
+                for (const student of students) {
+                    // Fetch grades for this student
+                    const uid = getSessionUid();
+                    if (!uid) continue;
+                    
+                    const gradesSnapshot = await getFirestore()
+                        .collection('grades')
+                        .where('studentId', '==', student.id)
+                        .get();
+                    
+                    const grades = gradesSnapshot.docs.map(doc => doc.data());
+                    
+                    // Calculate GPA
+                    let gpa = 0;
+                    if (grades.length > 0) {
+                        const sum = grades.reduce((acc, g) => acc + (g.score || 0), 0);
+                        gpa = sum / grades.length;
+                    }
+                    
+                    // Get attendance percentage
+                    const attendanceSnapshot = await getFirestore()
+                        .collection('attendance')
+                        .where('studentId', '==', student.id)
+                        .get();
+                    
+                    const attendanceDocs = attendanceSnapshot.docs.map(doc => doc.data());
+                    let attendancePercent = 0;
+                    if (attendanceDocs.length > 0) {
+                        const presentCount = attendanceDocs.filter(a => a.status === 'present').length;
+                        attendancePercent = Math.round((presentCount / attendanceDocs.length) * 100);
+                    }
+                    
+                    // Get contract status
+                    const contractSnapshot = await getFirestore()
+                        .collection('contracts')
+                        .where('studentId', '==', student.id)
+                        .limit(1)
+                        .get();
+                    
+                    const contractStatus = contractSnapshot.empty ? 'Yo\'q' : 'Bor';
+                    
+                    data.push({
+                        no: data.length + 1,
+                        name: student.fullName || student.name || 'Noma\'lum',
+                        gpa: gpa.toFixed(2),
+                        attendance: attendancePercent + '%',
+                        contract: contractStatus
+                    });
+                }
+                
+                // Create PDF using jsPDF
+                if (!window.jspdf || !window.jspdf.jsPDF) {
+                    console.error('jsPDF is not loaded');
+                    return;
+                }
+                
+                const doc = new window.jspdf.jsPDF();
+                
+                // Add title
+                doc.setFontSize(16);
+                doc.text('Talabalar Hisoboti', 14, 22);
+                
+                // Prepare table data
+                const tableData = data.map(row => [
+                    row.no,
+                    row.name,
+                    row.gpa,
+                    row.attendance,
+                    row.contract
+                ]);
+                
+                // Use autoTable if available, otherwise fallback to manual text
+                if (doc.autoTable) {
+                    doc.autoTable({
+                        startY: 30,
+                        head: [['№', 'Ism', 'GPA', 'Davomat%', 'Kontrakt holati']],
+                        body: tableData,
+                        margin: 14,
+                        didDrawPage: function() {
+                            // Footer
+                            const pageSize = doc.internal.pageSize;
+                            const pageHeight = pageSize.getHeight();
+                            const pageWidth = pageSize.getWidth();
+                            doc.setFontSize(10);
+                            doc.text(
+                                'Sana: ' + new Date().toLocaleDateString('uz-UZ'),
+                                14,
+                                pageHeight - 10
+                            );
+                        }
+                    });
+                } else {
+                    // Fallback: manual text rendering
+                    let yPosition = 30;
+                    const lineHeight = 8;
+                    const colWidths = [10, 60, 25, 30, 40];
+                    const colPositions = [14, 24, 84, 109, 139];
+                    
+                    // Draw header
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'bold');
+                    const headers = ['№', 'Ism', 'GPA', 'Davomat%', 'Kontrakt holati'];
+                    colPositions.forEach((x, i) => {
+                        doc.text(headers[i], x, yPosition);
+                    });
+                    
+                    yPosition += lineHeight;
+                    doc.setFont(undefined, 'normal');
+                    
+                    // Draw rows
+                    tableData.forEach(row => {
+                        if (yPosition > 270) {
+                            doc.addPage();
+                            yPosition = 14;
+                        }
+                        colPositions.forEach((x, i) => {
+                            doc.text(String(row[i]), x, yPosition);
+                        });
+                        yPosition += lineHeight;
+                    });
+                }
+                
+                // Save PDF
+                doc.save('edumanage-hisobot.pdf');
+                console.log('PDF report downloaded successfully');
+            } catch (error) {
+                console.error('Error generating PDF report:', error);
+            }
         }
     };
 

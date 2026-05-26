@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isTeacher() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'oquvchi';
+    }
+    
+    function isStudent() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'talaba';
+    }
+    
+    // Users collection - users can only read their own document; only admins can write
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId;
+      allow write: if isAdmin();
+    }
+    
+    // Attendance collection - teachers and admins can read; only teachers can create; only admins can update/delete
+    match /attendance/{attendanceId} {
+      allow read: if isTeacher() || isAdmin();
+      allow create: if isTeacher();
+      allow update, delete: if isAdmin();
+    }
+    
+    // Grades collection - students can read only their own grades; teachers and admins can read and write
+    match /grades/{gradeId} {
+      allow read: if (isStudent() && resource.data.studentId == request.auth.uid) || isTeacher() || isAdmin();
+      allow create, update, delete: if isTeacher() || isAdmin();
+    }
+    
+    // Contracts collection - students can read only their own contract; only admins can write
+    match /contracts/{contractId} {
+      allow read: if (isStudent() && resource.data.studentId == request.auth.uid) || isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // Payments collection - students can read only their own payments; only admins can write
+    match /payments/{paymentId} {
+      allow read: if (isStudent() && resource.data.studentId == request.auth.uid) || isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // Allow other collections for general read/write by authenticated users
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

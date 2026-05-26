@@ -60,3 +60,56 @@ self.addEventListener('fetch', (event) => {
       )
   );
 });
+
+// Push Notification Event
+self.addEventListener('push', (event) => {
+  let data = {};
+  
+  try {
+    if (event.data) {
+      data = event.data.json();
+    }
+  } catch (error) {
+    console.error('Failed to parse push data as JSON:', error);
+  }
+
+  const title = data.title || 'EduManage';
+  const options = {
+    body: data.body || 'Yangi bildirishnoma bor',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+    data: {
+      url: data.url || '/'
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// Notification Click Event
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const urlToOpen = event.notification.data.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    }).then((clientList) => {
+      // Check if there's already a window/tab open with the target URL
+      for (let i = 0; i < clientList.length; i++) {
+        if (clientList[i].url === urlToOpen && 'focus' in clientList[i]) {
+          return clientList[i].focus();
+        }
+      }
+      // If not, open a new window/tab with the URL
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+
