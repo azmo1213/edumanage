@@ -46,6 +46,27 @@
     };
 
     const Auth = {
+        seedAttempted: false,
+        TEST_ACCOUNTS: [
+            'admin@edumanage.com',
+            'teacher@edumanage.com',
+            'student1@edumanage.com',
+            'student2@edumanage.com'
+        ],
+
+        async ensureSeededIfTestAccount(email) {
+            if (this.seedAttempted) return;
+            const cleanEmail = email.trim().toLowerCase();
+            if (!this.TEST_ACCOUNTS.includes(cleanEmail)) return;
+            if (typeof window.SeedData === 'object' && typeof window.SeedData.run === 'function') {
+                this.seedAttempted = true;
+                console.log('[Auth] seeding test accounts for', cleanEmail);
+                await window.SeedData.run((message) => {
+                    console.log('[SeedData]', message);
+                });
+            }
+        },
+
         login: async function(email, password) {
           try {
             const cleanEmail = email.trim().toLowerCase();
@@ -72,6 +93,33 @@
             return { success: true, user: userData };
 
           } catch(e) {
+            if (e.code === 'auth/user-not-found') {
+                await this.ensureSeededIfTestAccount(email);
+                if (this.seedAttempted) {
+                    try {
+                        const retryResult = await firebase.auth()
+                            .signInWithEmailAndPassword(email.trim().toLowerCase(), password.trim());
+
+                        const retryDoc = await firebase.firestore()
+                            .collection('users')
+                            .doc(retryResult.user.uid)
+                            .get();
+
+                        if (!retryDoc.exists) {
+                            await firebase.auth().signOut();
+                            throw new Error('Foydalanuvchi topilmadi');
+                        }
+
+                        const userData = { uid: retryResult.user.uid, ...retryDoc.data() };
+                        sessionStorage.setItem('edu-session', JSON.stringify(userData));
+                        console.log('[Auth] login success after seeding, role:', userData.role);
+                        return { success: true, user: userData };
+                    } catch (retryError) {
+                        e = retryError;
+                    }
+                }
+            }
+
             console.error('[Auth] login error:', e.code, e.message);
             const errors = {
               'auth/invalid-email':      "Email formati noto'g'ri",
@@ -272,9 +320,22 @@
         const loginButton = document.getElementById('login-button');
         const usernameInput = document.getElementById('login-email');
         const passwordInput = document.getElementById('login-password');
+        const togglePasswordBtn = document.getElementById('toggle-password');
         const errorEl = document.getElementById('login-error');
 
         if (!loginButton || !usernameInput || !passwordInput || !errorEl) return;
+
+        if (togglePasswordBtn) {
+            togglePasswordBtn.addEventListener('click', () => {
+                const show = passwordInput.type === 'password';
+                passwordInput.type = show ? 'text' : 'password';
+                const icon = togglePasswordBtn.querySelector('i');
+                if (icon) {
+                    icon.className = show ? 'ph ph-eye-slash' : 'ph ph-eye';
+                }
+                togglePasswordBtn.setAttribute('aria-label', show ? 'Parolni yashirish' : 'Parolni ko\'rish');
+            });
+        }
 
         activateRoleButtons();
 

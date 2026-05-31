@@ -38,8 +38,11 @@
             <div class="auth-field" style="margin-bottom:16px;">
                 <input id="login-email" type="text" placeholder="Email manzilingiz" style="width:100%;padding:14px 16px;border:1px solid var(--border-color);border-radius:14px;background:var(--bg-color);color:var(--text-main);outline:none;" />
             </div>
-            <div class="auth-field" style="margin-bottom:20px;">
+            <div class="auth-field password-field" style="margin-bottom:20px;position:relative;">
                 <input id="login-password" type="password" placeholder="Parol" style="width:100%;padding:14px 16px;border:1px solid var(--border-color);border-radius:14px;background:var(--bg-color);color:var(--text-main);outline:none;" />
+                <button type="button" id="toggle-password" class="icon-btn password-toggle" aria-label="Parolni ko'rish" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);width:40px;height:40px;">
+                    <i class="ph ph-eye"></i>
+                </button>
             </div>
             <button id="forgot-btn" type="button">Parolni unutdim?</button>
             <div id="forgot-form" style="display:none">
