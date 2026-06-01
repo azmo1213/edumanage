@@ -45,6 +45,8 @@ window.SeedData = {
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    console.log('[SeedData] Starting seeding...');
+
     // Create test accounts
     for (let i = 0; i < this.testAccounts.length; i++) {
       const account = this.testAccounts[i];
@@ -56,11 +58,15 @@ window.SeedData = {
         // Check if user already exists
         let userCredential;
         try {
+          console.log(`[SeedData] Creating user: ${account.email}`);
           userCredential = await auth.createUserWithEmailAndPassword(account.email, account.password);
+          console.log(`[SeedData] User created: ${account.email}, uid: ${userCredential.user.uid}`);
         } catch (authError) {
           if (authError.code === 'auth/email-already-in-use') {
+            console.log(`[SeedData] User already exists: ${account.email}, signing in...`);
             // User already exists, sign in to get the uid
             userCredential = await auth.signInWithEmailAndPassword(account.email, account.password);
+            console.log(`[SeedData] Signed in existing user: ${account.email}, uid: ${userCredential.user.uid}`);
           } else {
             throw authError;
           }
@@ -87,9 +93,12 @@ window.SeedData = {
           userData.totalCredits = 120;
         }
 
+        console.log(`[SeedData] Writing Firestore document for ${uid}...`);
         await db.collection('users').doc(uid).set(userData, { merge: true });
+        console.log(`[SeedData] Firestore document created for ${account.email}`);
         results.success.push(`✓ ${account.fullName} (${account.role})`);
       } catch (error) {
+        console.error(`[SeedData] Error for ${account.email}:`, error);
         results.failed.push(`✗ ${account.fullName}: ${error.message}`);
       }
     }
@@ -236,6 +245,8 @@ window.SeedData = {
     }
 
     if (onProgress) onProgress('Tayyor!', 100);
+    console.log('[SeedData] Seeding complete. Success:', results.success.length, 'Failed:', results.failed.length);
+    console.log('[SeedData] Results:', results);
     return results;
   },
 

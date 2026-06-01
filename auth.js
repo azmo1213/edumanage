@@ -55,15 +55,32 @@
         ],
 
         async ensureSeededIfTestAccount(email) {
-            if (this.seedAttempted) return;
+            if (this.seedAttempted) {
+                console.log('[Auth] Seeding already attempted, skipping');
+                return;
+            }
             const cleanEmail = email.trim().toLowerCase();
-            if (!this.TEST_ACCOUNTS.includes(cleanEmail)) return;
+            console.log('[Auth] Checking if test account:', cleanEmail);
+            if (!this.TEST_ACCOUNTS.includes(cleanEmail)) {
+                console.log('[Auth] Not a test account, skipping seeding');
+                return;
+            }
             if (typeof window.SeedData === 'object' && typeof window.SeedData.run === 'function') {
                 this.seedAttempted = true;
-                console.log('[Auth] seeding test accounts for', cleanEmail);
-                await window.SeedData.run((message) => {
-                    console.log('[SeedData]', message);
-                });
+                console.log('[Auth] Starting seeding for test accounts...');
+                try {
+                    await window.SeedData.run((message) => {
+                        console.log('[SeedData]', message);
+                    });
+                    console.log('[Auth] Seeding completed successfully, waiting for Firebase...');
+                    // Wait a bit for Firebase to propagate
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    console.log('[Auth] Ready to retry login');
+                } catch (seedError) {
+                    console.error('[Auth] Seeding failed:', seedError);
+                }
+            } else {
+                console.error('[Auth] SeedData not available');
             }
         },
 
@@ -93,10 +110,15 @@
             return { success: true, user: userData };
 
           } catch(e) {
-            if (e.code === 'auth/user-not-found') {
+            console.error('[Auth] Initial login error:', e.code, e.message);
+            
+            // Try seeding for test accounts if user not found or credentials invalid
+            if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+                console.log('[Auth] Attempting to seed test account...');
                 await this.ensureSeededIfTestAccount(email);
                 if (this.seedAttempted) {
                     try {
+                        console.log('[Auth] Retrying login after seeding...');
                         const retryResult = await firebase.auth()
                             .signInWithEmailAndPassword(email.trim().toLowerCase(), password.trim());
 
@@ -115,8 +137,11 @@
                         console.log('[Auth] login success after seeding, role:', userData.role);
                         return { success: true, user: userData };
                     } catch (retryError) {
+                        console.error('[Auth] Login retry failed:', retryError.code, retryError.message);
                         e = retryError;
                     }
+                } else {
+                    console.log('[Auth] Seeding was not attempted (not a test account or SeedData unavailable)');
                 }
             }
 
