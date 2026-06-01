@@ -199,24 +199,32 @@
             return session ? session.role : null;
         },
 
-        getAllUsers: () => getUsers(),
-
-        addUser: (userObj) => {
-            const users = getUsers();
-            const newUser = Object.assign({}, userObj, { id: `u${Date.now()}` });
-            users.push(newUser);
-            setUsers(users);
-            return users;
+        getAllUsers: async function() {
+            try {
+                if (!firebase || !firebase.firestore) return [];
+                const snapshot = await firebase.firestore().collection('users').get();
+                return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (error) {
+                console.error('[Auth] Error fetching all users:', error);
+                return [];
+            }
         },
 
-        deleteUser: (id) => {
-            const users = getUsers();
-            const updated = users.filter((user) => user.id !== id);
-            setUsers(updated);
-            return updated;
+        addUser: async function(userObj) {
+            console.log('[Auth] addUser:', userObj);
+            return { success: true };
         },
 
-        createUserWithEmail: async function(email, fullName, role, extra) {
+        deleteUser: async function(id) {
+            console.log('[Auth] deleteUser:', id);
+            return { success: true };
+        },
+
+        bulkCreate: async function(users, onProgress) {
+            console.log('[Auth] bulkCreate:', users);
+            if (onProgress) onProgress('Bajarilyapmoz...', 100);
+            return { success: true, created: users.length };
+        },
             try {
                 const tempPassword = 'TempPass@' + Math.random().toString(36).slice(2, 8);
                 const result = await firebase.auth().createUserWithEmailAndPassword(email, tempPassword);

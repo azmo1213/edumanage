@@ -1,4 +1,14 @@
 (function (window) {
+    const getUserRole = () => {
+        const raw = sessionStorage.getItem('edu-session');
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw).role;
+        } catch {
+            return null;
+        }
+    };
+
     const getSessionUid = () => {
         const raw = sessionStorage.getItem('edu-session');
         if (!raw) return null;
@@ -74,11 +84,25 @@
         },
 
         getGrades: async ({ courseId } = {}) => {
-            const filters = [];
-            if (courseId) {
-                filters.push(['courseId', '==', courseId]);
+            const uid = getSessionUid();
+            const role = getUserRole();
+            if (!uid) return [];
+
+            let query = getFirestore().collection('grades');
+
+            // If student, filter by studentId; if teacher, filter by uid
+            if (role === 'talaba') {
+                query = query.where('studentId', '==', uid);
+            } else {
+                query = query.where('uid', '==', uid);
             }
-            const items = await queryCollection('grades', filters);
+
+            if (courseId) {
+                query = query.where('courseId', '==', courseId);
+            }
+
+            const snapshot = await query.get();
+            const items = mapSnapshot(snapshot);
             return items.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
         },
 
@@ -240,6 +264,45 @@
             const updated = { ...session, ...data };
             sessionStorage.setItem('edu-session', JSON.stringify(updated));
             return updated;
+        },
+
+        getContract: async function() {
+            const uid = getSessionUid();
+            if (!uid) return null;
+            try {
+                const snapshot = await getFirestore()
+                    .collection('contracts')
+                    .where('studentId', '==', uid)
+                    .limit(1)
+                    .get();
+                
+                if (snapshot.empty) return null;
+                const doc = snapshot.docs[0];
+                return { id: doc.id, ...doc.data() };
+            } catch (error) {
+                console.error('[MockDB] Error getting contract:', error);
+                return null;
+            }
+        },
+
+        getAllUsers: async function() {
+            try {
+                const snapshot = await getFirestore().collection('users').get();
+                return mapSnapshot(snapshot);
+            } catch (error) {
+                console.error('[MockDB] Error getting all users:', error);
+                return [];
+            }
+        },
+
+        getAllContracts: async function() {
+            try {
+                const snapshot = await getFirestore().collection('contracts').get();
+                return mapSnapshot(snapshot);
+            } catch (error) {
+                console.error('[MockDB] Error getting all contracts:', error);
+                return [];
+            }
         },
 
         generateExcelReport: async function(groupId) {

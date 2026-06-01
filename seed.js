@@ -6,31 +6,106 @@ window.SeedData = {
       email: 'admin@edumanage.com',
       password: 'Admin@2025',
       role: 'admin',
-      fullName: 'Admin Foydalanuvchi',
-      faculty: 'Administration'
+      fullName: 'Botir Rahimov',
+      faculty: 'Axborot texnologiyalari',
+      avatarColor: '#6C5CE7'
     },
     {
       email: 'teacher@edumanage.com',
       password: 'Teacher@2025',
       role: 'oquvchi',
-      fullName: 'Ali O\'qituvchi',
-      faculty: 'Computer Science'
+      fullName: 'Sardor Toshmatov',
+      subject: 'Veb dasturlash',
+      faculty: 'Kompyuter fanlari',
+      avatarColor: '#00B894'
     },
     {
       email: 'student1@edumanage.com',
       password: 'Student@2025',
       role: 'talaba',
-      fullName: 'Alisher Nurmatov',
-      group: 'CS-401',
-      faculty: 'Computer Science'
+      fullName: 'Alisher Nazarov',
+      group: 'KI-31',
+      faculty: 'Kompyuter injiniringi',
+      semester: '6',
+      gpa: 3.72,
+      gpaLocal: 4.45,
+      attendancePercent: 94,
+      completedCredits: 45,
+      totalCredits: 120,
+      avatarColor: '#A29BFE'
     },
     {
       email: 'student2@edumanage.com',
       password: 'Student@2025',
       role: 'talaba',
-      fullName: 'Zarina Shodmonova',
-      group: 'CS-401',
-      faculty: 'Computer Science'
+      fullName: 'Malika Yusupova',
+      group: 'KI-31',
+      faculty: 'Kompyuter injiniringi',
+      semester: '6',
+      gpa: 3.55,
+      gpaLocal: 4.20,
+      attendancePercent: 88,
+      completedCredits: 42,
+      totalCredits: 120,
+      avatarColor: '#FD79A8'
+    }
+  ],
+
+  courseData: [
+    {
+      name: 'Algoritmlar nazariyasi',
+      creditHours: 5,
+      credits: 5,
+      teacherName: 'Sardor Toshmatov',
+      room: '310',
+      color: 'blue',
+      progress: 78,
+      currentGrade: '4.5',
+      description: 'Algoritmlarni tahlil qilish'
+    },
+    {
+      name: "Ma'lumotlar bazasi",
+      creditHours: 4,
+      credits: 4,
+      teacherName: 'Sardor Toshmatov',
+      room: '205',
+      color: 'purple',
+      progress: 65,
+      currentGrade: '4.0',
+      description: 'SQL va NoSQL'
+    },
+    {
+      name: 'Veb dasturlash',
+      creditHours: 4,
+      credits: 4,
+      teacherName: 'Sardor Toshmatov',
+      room: '110',
+      color: 'green',
+      progress: 90,
+      currentGrade: '5.0',
+      description: 'HTML, CSS, JS, PWA'
+    },
+    {
+      name: 'Kompyuter tarmoqlari',
+      creditHours: 3,
+      credits: 3,
+      teacherName: 'Sardor Toshmatov',
+      room: '401',
+      color: 'orange',
+      progress: 55,
+      currentGrade: '3.8',
+      description: 'TCP/IP, HTTP'
+    },
+    {
+      name: "Dasturiy ta'minot injiniringi",
+      creditHours: 3,
+      credits: 3,
+      teacherName: 'Sardor Toshmatov',
+      room: '215',
+      color: 'red',
+      progress: 70,
+      currentGrade: '4.2',
+      description: 'Agile, Scrum'
     }
   ],
 

@@ -3,52 +3,75 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     function isTeacher() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'oquvchi';
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'oquvchi';
     }
     
     function isStudent() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'talaba';
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'talaba';
     }
     
+    // Users collection - authenticated users can read, create their own, admins can update/delete
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
+      allow read: if request.auth != null;
       allow create: if request.auth.uid == userId;
       allow update: if request.auth.uid == userId || isAdmin();
       allow delete: if isAdmin();
     }
     
-    match /attendance/{document=**} {
-      allow read: if isTeacher() || isAdmin();
-      allow create: if isTeacher();
-      allow update, delete: if isAdmin();
+    // Schedule - authenticated users can read their own
+    match /schedule/{document=**} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isAdmin());
+      allow write: if isTeacher() || isAdmin();
     }
     
+    // Grades - students can read their own, teachers can manage
     match /grades/{document=**} {
       allow read: if (isStudent() && resource.data.studentId == request.auth.uid) || isTeacher() || isAdmin();
-      allow create, update, delete: if isTeacher() || isAdmin();
+      allow write: if isTeacher() || isAdmin();
     }
     
+    // Attendance - teachers can read and write, students can read theirs
+    match /attendance/{document=**} {
+      allow read: if (isStudent() && resource.data.studentId == request.auth.uid) || isTeacher() || isAdmin();
+      allow write: if isTeacher() || isAdmin();
+    }
+    
+    // Contracts - students can read their own, admins can read all
     match /contracts/{document=**} {
       allow read: if (isStudent() && resource.data.studentId == request.auth.uid) || isAdmin();
       allow write: if isAdmin();
     }
     
-    match /payments/{document=**} {
-      allow read: if (isStudent() && resource.data.studentId == request.auth.uid) || isAdmin();
-      allow write: if isAdmin();
+    // Groups - teachers can manage, students can read
+    match /groups/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if isTeacher() || isAdmin();
     }
     
+    // Courses - authenticated users can read
     match /courses/{document=**} {
       allow read: if request.auth != null;
-      allow create, update, delete: if isTeacher() || isAdmin();
+      allow write: if isTeacher() || isAdmin();
     }
     
+    // Notifications - users can read their own
+    match /notifications/{document=**} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow write: if request.auth.uid == resource.data.uid || isAdmin();
+    }
+    
+    // Tasks - users can manage their own
+    match /tasks/{document=**} {
+      allow read, write: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    
+    // Default deny all
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }
